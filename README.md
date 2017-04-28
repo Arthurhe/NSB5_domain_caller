@@ -1,5 +1,6 @@
-
-<div style="text-align:center"><img src ="https://Arthurhe.github.com/NSB5_domain_caller/images/NSB5logo.png" width="400" /></div>
+<p align="center">
+  <img src ="https://Arthurhe.github.com/NSB5_domain_caller/images/NSB5logo.png" width="400" alt="NSB5 logo"/>
+</p>
 
 # NSB5_domain_caller V0.1
 
