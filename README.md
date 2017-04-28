@@ -7,7 +7,8 @@ A HiC matrix and domain plotter: NSB5_heatmap
 ## Main Features
 
 Efficient domain calling. Better than Directionality index-HMM, Juicebox and Armartus.
-![My image](https://raw.githubusercontent.com/Arthurhe/NSB5_domain_caller/images/CTCF on domain boundaries.png)
+
+![My image](NSB5_domain_caller/images/domain_calling_example.png)
 
 ## Getting Started
 
