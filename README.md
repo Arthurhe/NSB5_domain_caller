@@ -174,8 +174,9 @@ Options:
 
 ## License
 
-This project is licensed under the xx- see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the Apache License 2.0- see the [LICENSE.md](LICENSE.md) file for details
 
 ## Acknowledgments
 
-* Thanks Kees Murre for supporting the development of the script
+* Thanks **Kees Murre** for supporting the development of the script
+* **MURRE Lab @ UCSD** http://labs.biology.ucsd.edu/murre/index.html 
