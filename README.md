@@ -4,6 +4,11 @@ A domain caller working on HOMER tag directory of HiC: NSB5_homer (the current v
 
 A HiC matrix and domain plotter: NSB5_heatmap
 
+## Main Features
+
+Efficient domain calling. Better than Directionality index-HMM, Juicebox and Armartus.
+![My image](https://raw.githubusercontent.com/Arthurhe/NSB5_domain_caller/images/CTCF on domain boundaries.png)
+
 ## Getting Started
 
 Copy paste the folder lol, for now.
