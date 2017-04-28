@@ -1,0 +1,146 @@
+#!/usr/bin/env Rscript
+#draw heatmap for HiC matrix and domains
+suppressMessages(library(data.table)) 
+suppressMessages(library(gplots))
+suppressMessages(library(optparse))
+
+###parse input arguments
+option_list = list(
+  make_option(c("-m", "--mat"), type="character", default=NULL, 
+              help="matrix file. [required]", metavar="character"),
+  make_option(c("-d", "--domain1"), type="character", default=NULL,
+              help="domain file in bed format [required]", metavar="character"),
+  make_option(c("--domain2"), type="character", default=NULL, 
+              help="additional domain file in bed format [optional]", metavar="character"),
+  make_option(c("-r", "--res"), type="numeric", default=NULL, 
+              help="resolution of matrix [required]", metavar="numeric"),
+  make_option(c("-c","--chr"), type="character", default=NULL, 
+              help="chromosome name [required]", metavar="character"),
+  make_option(c("-o", "--outname"), type="character", default=NULL, 
+              help="output pdf name [required]", metavar="character"),
+  make_option(c("--igrow"), type="numeric", default=0, 
+              help="when loading matrix, ignore first k row, e.g. 1 (for HOMER matrix) [default:0]", metavar="numeric"),
+  make_option(c("--igcol"), type="numeric", default=0, 
+              help="when loading matrix, ignore first k col, e.g. 2 (for HOMER matrix) [default:0]", metavar="numeric"),
+  make_option(c("-s", "--sta"), type="numeric", default=1, 
+              help="start of genomic position [default: 1]", metavar="numeric"),
+  make_option(c("-e", "--sto"), type="numeric", default=1000000, 
+              help="end of genomic position [default: 1000000]"),
+  make_option(c("--contrast"), type="numeric", default=4, 
+              help="contrast of the image [default:4]", metavar="numeric"),
+  make_option(c("--outformat"), type="character", default="pdf", 
+              help="output format, option available:pdf,png [default: pdf]")
+); 
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+###set up variable
+cat("# variable setup\n")
+if (is.null(opt$mat)|is.null(opt$domain1)|is.null(opt$res)|is.null(opt$outname)|is.null(opt$chr)){
+  cat("\n--------------------------------------------------------\n")
+  stop("some required arguments are missing\nuse -h to see manual", call.=FALSE)
+}
+
+matrixconverter=function(weight_matrix,domain1,domain2=NULL,strength=1){
+  weight_matrix=log10(weight_matrix+1)
+  themin=strength*(min(weight_matrix)-max(weight_matrix))
+  for(i in 1:nrow(domain1)){
+    weight_matrix[domain1[i,2],domain1[i,2]:domain1[i,3]]=themin
+    weight_matrix[domain1[i,2]:domain1[i,3],domain1[i,3]]=themin
+  }
+  if(!is.null(domain2)){
+    for(i in 1:nrow(domain2)){
+      weight_matrix[domain2[i,2]:domain2[i,3],domain2[i,2]]=themin
+      weight_matrix[domain2[i,3],domain2[i,2]:domain2[i,3]]=themin
+    }
+  }
+  return(weight_matrix)
+}
+
+shrink_matrix=function(weight_matrix,shrink_level){
+  oldrow=nrow(weight_matrix)
+  newrow=ceiling(oldrow/shrink_level)
+  new_matrix=matrix(0,newrow,oldrow)
+  #merge rows
+  for(i in 1:(newrow-1)){
+    new_matrix[i,]=colMeans(weight_matrix[((i-1)*shrink_level+1):(i*shrink_level),])
+  }
+  if((newrow-1)*shrink_level+1==oldrow){
+    new_matrix[newrow,]=weight_matrix[oldrow,]
+  }else{
+    new_matrix[newrow,]=colMeans(weight_matrix[((newrow-1)*shrink_level+1):oldrow,])
+  }
+  #merge cols
+  for(i in 1:(newrow-1)){
+    new_matrix[,i]=rowMeans(new_matrix[,((i-1)*shrink_level+1):(i*shrink_level)])
+  }
+  if((newrow-1)*shrink_level+1==oldrow){
+    new_matrix[,newrow]=new_matrix[,oldrow]
+  }else{
+    new_matrix[,newrow]=rowMeans(new_matrix[,((newrow-1)*shrink_level+1):oldrow])
+  }
+  return(new_matrix) 
+}
+
+shrink_bed=function(bed,shrink_level){
+  if(is.null(bed)){return(NULL)}
+  bed[,2]=floor(bed[,2]/shrink_level+1)
+  bed[,3]=ceiling(bed[,3]/shrink_level)
+  return(bed)
+}
+
+if (opt$igrow) {opt$igrow=seq(1,opt$igrow)}
+if (opt$igcol) {
+  opt$igcol=seq(1,opt$igcol)
+  input_matrix=as.matrix(fread(opt$mat,sep="\t",stringsAsFactors=FALSE,skip=opt$igrow,drop=opt$igcol,data.table=F))
+}else{
+  input_matrix=as.matrix(fread(opt$mat,sep="\t",stringsAsFactors=FALSE,skip=opt$igrow,data.table=F))
+}
+
+if(nrow(input_matrix)!=ncol(input_matrix)){stop("row number of matrix must identical to col number")}
+
+#domain1
+domain1=fread(opt$domain1,sep="\t",stringsAsFactors=FALSE,data.table=F,select = 1:3)
+name1=basename(opt$domain1)
+domain1=domain1[which(domain1[,1]==opt$chr),]
+domain1[,2]=floor(domain1[,2]/opt$res+1)
+domain1[,3]=pmin(ceiling(domain1[,3]/opt$res),nrow(input_matrix))
+domain1=domain1[which(!is.na(domain1[,2])&!is.na(domain1[,3])),]
+maintitle=paste(opt$chr,"\nupper triangular:",name1)
+#domain2
+if(!is.null(opt$domain2)){
+  domain2=fread(opt$domain2,sep="\t",stringsAsFactors=FALSE,data.table=F,select = 1:3) #fread will auto detect colnames
+  name2=basename(opt$domain2)
+  domain2=domain2[which(domain2[,1]==opt$chr),]
+  domain2[,2]=floor(domain2[,2]/opt$res+1)
+  domain2[,3]=min(ceiling(domain2[,3]/opt$res),nrow(input_matrix))
+  domain2=domain2[which(!is.na(domain2[,2])&!is.na(domain2[,3])),]
+  maintitle=paste(opt$chr,"\nupper triangular:",name1,"\nlower triangular:",name2)
+}else{domain2=NULL}
+
+#determine shrink level
+
+shrinklevel=ceiling((opt$sto-opt$sta)/1500/opt$res)#1500*1500is the largest matrix allowed to display
+if(shrinklevel>1){
+  domain1=shrink_bed(domain1,shrinklevel)
+  domain2=shrink_bed(domain2,shrinklevel)
+  input_matrix=shrink_matrix(input_matrix,shrinklevel)
+}
+weight_matrix=matrixconverter(input_matrix,domain1,domain2)
+weight_matrix=weight_matrix[floor(opt$sta/(opt$res*shrinklevel)+1):ceiling(opt$sto/(opt$res*shrinklevel)),floor(opt$sta/(opt$res*shrinklevel)+1):ceiling(opt$sto/(opt$res*shrinklevel))]
+
+if(opt$outformat=="pdf"){
+  pdf(file=opt$outname,width=13,height=13)
+}else if(opt$outformat=="png"){
+  png(file=opt$outname,width=20,height=20)
+}else{
+  stop("--outformat must be either pdf or png")
+}
+heatmap.2(weight_matrix,col=colorRampPalette(c(rep("#313695",opt$contrast), "#4575B4", "#74ADD1", "#ABD9E9", "#E0F3F8", "#FFFFBF","#FEE090", "#FDAE61", "#F46D43", "#D73027", rep("#A50026",opt$contrast))),
+          trace="none",density.info="none",key=F,Colv=F,Rowv=F,notecol="black",dendrogram = "none",
+          main=maintitle,
+          lhei=c(0.5,5),lwid=c(0.5,5),margins = c(2,2),symkey=F)
+dev.off()
+
+#NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.png -c chr10 -s 20000000 -e 90000000 --outformat=png

@@ -1,0 +1,82 @@
+#!/usr/bin/env Rscript
+#initializing current location
+thisFile <- function() {
+  cmdArgs <- commandArgs(trailingOnly = FALSE)
+  needle <- "--file="
+  match <- grep(needle, cmdArgs)
+  if (length(match) > 0) {
+    # Rscript
+    return(normalizePath(sub(needle, "", cmdArgs[match])))
+  } else {
+    # 'source'd via R console
+    return(normalizePath(sys.frames()[[1]]$ofile))
+  }
+}
+script.dir <- dirname(thisFile()) #setup current location
+
+#library check
+cat("# package check\n")
+list.of.packages <- c("optparse","data.table", "matrixStats", "GenomicRanges", "fitdistrplus","gplots")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)){
+  cat("# package installing\n")
+  #modifing ~/.Rprofile
+  if(file.exists("~/.Rprofile")){
+    posi=grep("^#NSB message added$", readLines("~/.Rprofile"))
+    if(length(posi)==0){
+      cat("# editing ~/.Rprofile\n")
+      system(paste0("echo 'r <- getOption(\"repos\")' >> ~/.Rprofile")) # hard code the US repo for CRAN
+      system(paste0("echo 'r[\"CRAN\"] <- \"http://cran.us.r-project.org\"' >> ~/.Rprofile"))             
+      system(paste0("echo 'options(repos = r)' >> ~/.Rprofile")) 
+      system(paste0("echo 'rm(r)' >> ~/.Rprofile")) 
+      system(paste0("echo '#NSB message added' >> ~/.Rprofile"))
+      system("sleep 1")
+    }else{
+      cat("# ~/.Rprofile has been modified, skipping it\n")
+    }
+  }else{
+    cat("# creating ~/.Rprofile\n")
+    system(paste0("echo 'r <- getOption(\"repos\")' >> ~/.Rprofile")) # hard code the US repo for CRAN
+    system(paste0("echo 'r[\"CRAN\"] <- \"http://cran.us.r-project.org\"' >> ~/.Rprofile"))             
+    system(paste0("echo 'options(repos = r)' >> ~/.Rprofile")) 
+    system(paste0("echo 'rm(r)' >> ~/.Rprofile")) 
+    system(paste0("echo '#NSB message added' >> ~/.Rprofile"))
+    system("sleep 1")
+  }
+  #modifying ~/.Renviron
+  if(file.exists("~/.Renviron")){
+    posi=grep("^#NSB message added$", readLines("~/.Renviron"))
+    if(length(posi)==0){
+      cat("# editing ~/.Renviron\n")
+      system(paste0("echo 'R_LIBS=",script.dir,"/Rlib' >> ~/.Renviron"))
+      system(paste0("echo '#NSB message added' >> ~/.Renviron")) 
+      system("sleep 1")
+    }else{
+      cat("# ~/.Renviron has been modified, skipping it\n")
+    }
+  }else{
+    cat("#creating ~/.Renviron\n")
+    system(paste0("echo 'R_LIBS=",script.dir,"/Rlib' >> ~/.Renviron"))
+    system(paste0("echo '#NSB message added' >> ~/.Renviron"))
+    system("sleep 1")
+  }
+  #installing
+  system(paste0("mkdir ",script.dir,"/Rlib"))
+  cat(paste0("# installing libraries to ",script.dir,"/Rlib \n"))
+  install.packages(new.packages, lib=paste0(script.dir,"/Rlib"))
+}
+
+#adding the script to ~/.bashrc
+posi=grep("^#NSB5 program$", readLines("~/.bashrc"))
+if(length(posi)==0){
+  cat("# editing ~/.bashrc\n")
+  system(paste0("echo ' ' >> ~/.bashrc")) 
+  system(paste0("echo '#NSB5 program' >> ~/.bashrc")) 
+  system(paste0("echo 'PATH=",script.dir,":$PATH' >> ~/.bashrc"))
+  system(paste0("echo 'PATH=/home/ahe/tools/bedtools2/bin:$PATH' >> ~/.bashrc"))
+}else{
+  cat("# ~/.bashrc has been modified, skipping it\n")
+}
+
+#add the path to PATH now
+system(paste0("bash ",script.dir,"/NSB_installer_addtoPATH.sh")) 

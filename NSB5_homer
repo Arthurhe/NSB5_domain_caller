@@ -1,0 +1,226 @@
+#!/usr/bin/env Rscript
+#This is the NSB wrapper for working on Homer tag directory
+ptm <- proc.time()
+#initializing current location
+thisFile <- function() {
+  cmdArgs <- commandArgs(trailingOnly = FALSE)
+  needle <- "--file="
+  match <- grep(needle, cmdArgs)
+  if (length(match) > 0) {
+    # Rscript
+    return(normalizePath(sub(needle, "", cmdArgs[match])))
+  } else {
+    # 'source'd via R console
+    return(normalizePath(sys.frames()[[1]]$ofile))
+  }
+}
+script.dir <- dirname(thisFile()) #setup current location
+
+#library check
+cat("# package check\n")
+list.of.packages <- c("optparse","data.table", "matrixStats", "GenomicRanges", "fitdistrplus")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)){
+  stop("the program require the following 5 R libraries:\noptparse, data.table, matrixStats, GenomicRanges, fitdistrplus\nInstall them manually or by runing NSB5_installer")
+}
+
+#library loading
+cat("# package loading\n")
+suppressMessages(library(optparse))
+suppressMessages(library(data.table)) 
+suppressMessages(library(matrixStats))
+suppressMessages(library(GenomicRanges))
+suppressMessages(library(fitdistrplus))
+
+cat("# package check and loading finished\n")
+options("scipen"=100)
+
+#load functions
+source(paste0(script.dir,"/NSB_all_function.R"))
+
+###parse input arguments
+option_list = list(
+  make_option(c("-t", "--tagDir"), type="character", default=NULL,
+              help="tag directory path (without the last slash: \"/\"). e.g. /home/ahe/Analysis/dn3.mm10 [required]", metavar="character"),
+  make_option(c("-r", "--resolution"), type="numeric", default=NULL, 
+              help="resolution of matrix. [required]", metavar="numeric"),
+  make_option(c("-s", "--genomeSize"), type="character", default=NULL, 
+              help="genome size file. [required]", metavar="character"),
+  make_option(c("-c", "--chrNum"), type="numeric", default=NULL, 
+              help="number of autosomes should we consider. e.g. 19 (for mouse) [default: determine from tag directory]", metavar="numeric"),
+  make_option(c("-O", "--overwrite"), action="store_true", default=FALSE, 
+              help="overwrite all existing files of previous NSB5 run [default: not overwrite]"),
+  make_option(c("--overwriteM"), action="store_true", default=FALSE, 
+              help="overwrite existing Matrix files of previous NSB5 run [default: not overwrite]"),
+  make_option(c("--overwriteD"), action="store_true", default=FALSE, 
+              help="overwrite existing domain candidate files of previous NSB5 run [default: not overwrite]"),
+  make_option(c("--overwriteH"), action="store_true", default=FALSE, 
+              help="overwrite existing HiC summary of previous NSB5 run [default: not overwrite]")
+); 
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+###set up variable
+cat("# variable setup\n")
+if (is.null(opt$tagDir)){
+  cat("\n--------------------------------------------------------\n")
+  stop("-t tag directory must be supplied\nuse -h to see manual", call.=FALSE)
+}
+tag=basename(opt$tagDir)
+
+if (is.null(opt$resolution)){
+  cat("\n--------------------------------------------------------\n")
+  stop("-r resolution must be set\nuse -h to see manual", call.=FALSE)
+}
+
+if (is.null(opt$genomeSize)){
+  cat("\n--------------------------------------------------------\n")
+  stop("-s genomeSize file must be supplied (input file)\nuse -h to see manual", call.=FALSE)
+}
+
+if(opt$overwrite){
+  opt$overwriteM=T
+  opt$overwriteD=T
+  opt$overwriteH=T
+}
+
+#check tag dir 
+tagtsvs=list.files(path = opt$tagDir, pattern = "chr.*\\.tags\\.tsv")
+tagchr=gsub("(chr.*)(\\.tags\\.tsv)","\\1",tagtsvs)
+if(length(tagchr)==0){
+  cat("\n--------------------------------------------------------\n")
+  stop("provided path in -t/--tagDir is not a tag directory\nuse -h to see manual", call.=FALSE)
+}
+
+if (!is.null(opt$chrNum)){
+  tagchr=paste0("chr",c(1:opt$chrNum,"X","Y")) 
+}
+cat(paste("----------- preliminary check finished, time consumption so far:",timetaken(ptm),"\n"))
+
+###analyzeHiC 
+setwd(opt$tagDir)
+Matrix_folder=paste0("Matrix_",opt$resolution)
+extMtx=list.files(path = paste0(opt$tagDir,"/",Matrix_folder),
+                  pattern = paste0(tag,"_chr.*_matrix_",opt$resolution,".txt"),
+                  full.names =T)
+
+if(opt$overwriteM){
+  cat("# overwriting or making matrix\n")
+  system(paste0("rm -r ",opt$tagDir,"/",Matrix_folder))
+  system(paste0("mkdir ",opt$tagDir,"/",Matrix_folder))
+  for(i in tagchr){
+    system(paste0("analyzeHiC ",opt$tagDir," -res ",opt$resolution," -chr ",i," -raw > ",opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_",opt$resolution,".txt"))
+  }
+}else{
+  cat("# making matrix\n")
+  system(paste0("mkdir ",opt$tagDir,"/",Matrix_folder))
+  for(i in tagchr){
+    outMtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_",opt$resolution,".txt")
+    if(outMtx %in% extMtx){
+      if(file.size(outMtx)<1000){
+        system(paste0("analyzeHiC ",opt$tagDir," -res ",opt$resolution," -chr ",i," -raw > ",outMtx))
+      }
+    }else{
+      system(paste0("analyzeHiC ",opt$tagDir," -res ",opt$resolution," -chr ",i," -raw > ",outMtx))
+    }
+  }
+}
+
+###check matrix generation result
+dropchr=c()
+for(i in tagchr){
+  outMtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_",opt$resolution,".txt")
+  if(file.size(outMtx)<1000){
+    dropchr=c(dropchr,i)
+  }
+}
+tagchr=setdiff(tagchr,dropchr)
+if(length(dropchr)){
+  cat(paste0("# dropping ",paste(dropchr,collapse = ",")," because HOMER failed to produce corresponding matrix\n"))
+}
+cat(paste("----------- HOMER matrix generated, time consumption so far:",timetaken(ptm),"\n"))
+
+###KRnorm
+extMtx=list.files(path = paste0(opt$tagDir,"/",Matrix_folder),
+                  pattern = paste0(tag,"_chr.*_matrix_KR_",opt$resolution,".txt"),
+                  full.names =T)
+
+if(opt$overwriteM){
+  cat("# overwriting or creating KR normalized matrix\n")
+  for(i in tagchr){
+    tagMtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_",opt$resolution,".txt")
+    outMtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_KR_",opt$resolution,".txt")
+    KR_normalization(tagMtx,ignore_row=1,ignore_col=2,sparse_limit=0.995,outname=outMtx)
+  }
+}else{
+  cat("# KR normalizing matrix\n")
+  for(i in tagchr){
+    tagMtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_",opt$resolution,".txt")
+    outMtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",i,"_matrix_KR_",opt$resolution,".txt")
+    if(outMtx %in% extMtx){
+      if(file.size(outMtx)<1000){
+        KR_normalization(tagMtx,ignore_row=1,ignore_col=2,sparse_limit=0.995,outname=outMtx)
+      }
+    }else{
+      KR_normalization(tagMtx,ignore_row=1,ignore_col=2,sparse_limit=0.995,outname=outMtx)
+    }
+  }
+}
+cat(paste("----------- KR normalized, time consumption so far:",timetaken(ptm),"\n"))
+
+###create chromosome manifest and find domain
+##always do domain searching
+domain_folder=paste0("domain_",opt$resolution)
+outdo=paste0(opt$tagDir,"/",domain_folder,"/",tag)
+outdoele=paste0(opt$tagDir,"/",domain_folder,"/",tag,"_elemental_domains_",opt$resolution,".bed")
+manifest=data.frame(chr=tagchr,mtx=paste0(opt$tagDir,"/",Matrix_folder,"/",tag,"_",tagchr,"_matrix_KR_",opt$resolution,".txt"),stringsAsFactors = F)
+write.table(manifest,file="manifest.txt",sep=",",col.names = F, row.names = F,quote = F)
+if(opt$overwriteD | !file.exists(outdoele)){
+  system(paste0("rm -r ",opt$tagDir,"/",domain_folder))
+  system(paste0("mkdir ",opt$tagDir,"/",domain_folder))
+  cat("# identifying domain candidate\n")
+  NSB_elemental_domain=NSB_domain_call(input_manifest=manifest,
+                                       bin_size=opt$resolution,
+                                       smallest_domain_allowed=max(opt$resolution*3,100000),
+                                       largest_domain_allowed=10000000,
+                                       output_prefix=outdo)
+}else{
+  cat("# skip identifying domain candidate\n")
+  NSB_elemental_domain=fread(paste0(outdo,"_elemental_domains_",opt$resolution,".bed"), sep="\t", stringsAsFactors=F, data.table=F)
+}
+cat(paste("----------- domain candidate identified, time consumption so far:",timetaken(ptm),"\n"))
+
+###HiC summary generation
+if(opt$overwriteH | !file.exists(paste0(opt$tagDir,"/HiC_summary.txt"))){
+  cat("# creating HiC summary\n")
+  system(paste0(script.dir,"/NSB_homer_HiC_summary_generation.sh ",opt$tagDir))
+}else{
+  cat("# skip creating HiC summary\n")
+}
+cat(paste("----------- HiC summarizing finished, time consumption so far:",timetaken(ptm),"\n"))
+
+##reads organizing
+cat("# domain boundary reads processing\n")
+boundaryRegion=domain_refine_prefilteringRegionCreation(domains=NSB_elemental_domain,
+                                                       obinSize=opt$resolution,
+                                                       outname=paste0(opt$tagDir,"/prefilteringRegionList.bed"))
+boundaryRegion_splited=region_expanding_fixedSize(widsize=opt$resolution/10,
+                                                  expnum=1,
+                                                  loops_table=boundaryRegion,
+                                                  outname=paste0(opt$tagDir,"/prefilteringRegionList_splited.bed"))
+cat("# boundary region created\n")
+system(paste0(script.dir,"/NSB5_tag_processing_simp.sh ",opt$tagDir," ",opt$genomeSize))
+cat(paste("----------- reads processing finished, time consumption so far:",timetaken(ptm),"\n"))
+
+###domain refining
+cat("# refining domain\n")
+outdo=paste0(opt$tagDir,"/",domain_folder,"/",tag,"_refined_domains.bed")
+NSB_refine_domain=NSB_domain_refine(domains=NSB_elemental_domain,
+                                    obinSize=opt$resolution,
+                                    readcountPlus=paste0(opt$tagDir,"/BoundaryRegionCount_plus.bed"),
+                                    readcountMinus=paste0(opt$tagDir,"/BoundaryRegionCount_minus.bed"),
+                                    outname=outdo)
+cat(paste("----------- NSB5 finished, time consumption so far:",timetaken(ptm),"\n"))
+
+##NSB5_homer -t /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10 -s /home/ahe/Analysis/genomeFiles/GenomeSize_mm10_core.txt -r 50000
