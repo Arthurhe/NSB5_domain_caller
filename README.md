@@ -6,9 +6,38 @@ A HiC matrix and domain plotter: NSB5_heatmap
 
 ## Main Features
 
-Efficient domain calling. Better than Directionality index-HMM, Juicebox and Armartus.
+**Efficient domain calling.** Better than Directionality index-HMM, Juicebox and Armartus.
 
-![My image](NSB5_domain_caller/images/domain_calling_example.png)
+The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCODE data, 2.5 and 2.1 billion reads respectively) 
+
+![My image](https://Arthurhe.github.com/NSB5_domain_caller/images/domain_calling_comparison.png)
+
+**Better CTCF directionality and cohesin enrichment on domain boundary.**
+
+**GM12**
+
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/GM12_domain_calling_SC_QC.png" width="600">
+
+**K562**
+
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/K562_domain_calling_SC_QC.png" width="600">
+
+**More comprehensive genome coverage, finer domain resolution and less overlap.**
+
+| GM12878  | Genome coverage | Domain number | Average domain size | Region overlapping percentage |
+| ------------- | -------- | ------- | ---------- | ---------- |
+| NSB5| 81.7% | 7504 | 346.5 Kb |  2.7% |
+| Juicebox | 54.5%  |6741 |370.0 Kb |31.1% |
+| Armatus | 42.3% |37123 | 35.3 Kb| 0% |
+| DI-HMM | 82.4% |3103 | 822.2 Kb|0% |
+
+| K562  | Genome coverage | Domain number | Average domain size | Region overlapping percentage |
+| ------------- | -------- | ------- | ---------- | ---------- |
+| NSB5  | 83.7% | 6342 | 425.7 Kb |  4.1% |
+| Juicebox | 50.7%  |6242 |362.0 Kb |29.4% |
+| Armatus | 38.0% |35597 | 33.0 Kb| 0% |
+| DI-HMM | 85.2% |3396 | 776.2 Kb|0% |
+
 
 ## Getting Started
 
