@@ -1,3 +1,6 @@
+
+<div style="text-align:center"><img src ="https://Arthurhe.github.com/NSB5_domain_caller/images/NSB5logo.png" width="400" /></div>
+
 # NSB5_domain_caller V0.1
 
 A domain caller working on HOMER tag directory of HiC: NSB5_homer (the current version relies on HOMER to run matrix construction)
@@ -16,11 +19,11 @@ The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCO
 
 **GM12**
 
-<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/GM12_domain_calling_SC_QC.png" width="600">
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/GM12_domain_calling_SC_QC.png" width="850">
 
 **K562**
 
-<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/K562_domain_calling_SC_QC.png" width="600">
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/K562_domain_calling_SC_QC.png" width="850">
 
 **More comprehensive genome coverage, finer domain resolution and less overlap.**
 
@@ -41,7 +44,7 @@ The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCO
 
 ## Getting Started
 
-Copy paste the folder lol, for now.
+Copy paste the folder to wherever you want.
 
 ### Prerequisites
 
