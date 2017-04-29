@@ -14,7 +14,7 @@ A HiC matrix and domain plotter: NSB5_heatmap
 
 The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCODE data, 2.5 and 2.1 billion reads respectively) 
 
-![My image](https://Arthurhe.github.com/NSB5_domain_caller/images/domain_calling_comparison.png)
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/domain_calling_comparison.png" width="900" alt="domain compare" />
 
 **Better CTCF directionality and cohesin enrichment on domain boundary.**
 
