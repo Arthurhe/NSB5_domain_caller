@@ -2,7 +2,7 @@
   <img src ="https://Arthurhe.github.com/NSB5_domain_caller/images/NSB5logo.png" width="400" alt="NSB5 logo" />
 </p>
 
-# NSB5 domain caller V0.11
+# NSB5 domain caller V0.1.1
 
 A domain caller working on HOMER tag directory of HiC: NSB5_homer (the current version relies on HOMER to run matrix construction)
 
