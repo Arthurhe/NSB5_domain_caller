@@ -20,11 +20,11 @@ The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCO
 
 **GM12**
 
-<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/GM12_domain_calling_SC_QC.png" width="850">
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/GM12_domain_calling_SC_QC.png" width="900">
 
 **K562**
 
-<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/K562_domain_calling_SC_QC.png" width="850">
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/K562_domain_calling_SC_QC.png" width="900">
 
 **More comprehensive genome coverage, finer domain resolution and less overlap.**
 
