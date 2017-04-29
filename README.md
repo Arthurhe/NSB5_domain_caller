@@ -10,7 +10,7 @@ A HiC matrix and domain plotter: NSB5_heatmap
 
 ## Main Features
 
-**Efficient domain calling.** domain_calling_comparison.png
+**Efficient domain calling.** 
 
 The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCODE data, 2.5 and 2.1 billion reads respectively) 
 
