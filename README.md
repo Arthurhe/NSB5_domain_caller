@@ -59,11 +59,11 @@ Copy paste the folder to wherever you want.
 
 The program only works in linux bash.
 
-1.R 3.2+
+1.R v3.3.2
 
-2.HOMER
+2.HOMER v4.9
 
-3.bedtools 2
+3.bedtools v2.25.0
 
 4.six R packages: 
  "optparse", "data.table", "matrixStats", "GenomicRanges", "fitdistrplus", "gplots"
@@ -74,12 +74,12 @@ copy paste all the script to a folder.
 
 make sure you have R, bedtools 2 and HOMER installed.
 
-Or you can run NSB5_installer to install the 6 R packages for you. The installer script will modify or creat ~/.Rprofile & ~/.Renviron to download R package from R's US server and let R recognize your/path/to/NSB5/Rlib as a library repo, and install the 6 packages for you (if your R doesn't have them). The script will also add NSB5 executable files to your PATH.
+Or you can run NSB5_installer to install the 6 R packages for you. The installer script will modify or create ~/.Rprofile & ~/.Renviron to download R package from R's US server and let R recognize your/path/to/NSB5/Rlib as a library repo. It will then install any of the 6 packages that's not in your R library repo. The script will also add NSB5 executable files to your PATH.
 
 ```
 your/path/to/NSB5/NSB5_installer
 ```
-### How to use the main program: NSB_homer
+### How to use the main program: NSB5_homer
 Example usage: 
 ```
 NSB5_homer -t /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10 -s /home/ahe/Analysis/genomeFiles/GenomeSize_mm10_core.txt -r 50000
@@ -92,7 +92,6 @@ NSB5_homer -h
 # package loading
 # package check and loading finished
 Usage: /home/ahe/tools/NSB5/NSB5_homer [options]
-
 
 Options:
 	-t CHARACTER, --tagDir=CHARACTER
@@ -123,17 +122,19 @@ Options:
 		Show this help message and exit
 ```
 
-### How to use the main program: NSB_homer
+### How to use the plotting program: NSB5_heatmap
 Example usage:
 ```
 NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.pdf -c chr10 -s 20000000 -e 90000000
 ```
+Example image:
+
+<img src="https://Arthurhe.github.com/NSB5_domain_caller/images/homer_heatmap_example.png" width="500">
 
 Use -h to see the plotting program's help page
 ```
 heatmap -h
 Usage: /home/ahe/tools/NSB5/NSB5_heatmap [options]
-
 
 Options:
 	-m CHARACTER, --mat=CHARACTER
@@ -163,18 +164,19 @@ Options:
 	-s NUMERIC, --sta=NUMERIC
 		start of genomic position [default: 1]
 
-	-e STO, --sto=STO
+	-e NUMERIC, --sto=NUMERIC
 		end of genomic position [default: 1000000]
 
 	--contrast=NUMERIC
 		contrast of the image [default:4]
 
-	--outformat=OUTFORMAT
+	--outformat=CHARACTER
 		output format, option available:pdf,png [default: pdf]
 
 	-h, --help
 		Show this help message and exit
 ```
+
 ## Authors
 
 * **Zhaoren (Arthur) He** - *Initial work* - [Arthurhe](https://github.com/Arthurhe)
