@@ -18,6 +18,14 @@ The following analysis were performed on GM12878 and K562, 25Kb resolution (ENCO
 
 **Better CTCF directionality and cohesin enrichment on domain boundary.**
 
+CTCF_both: CTCF ChIP-seq peak that has both "+" & "-" direction motifs
+
+CTCF_plus: CTCF ChIP-seq peak that has only "+" direction motifs
+
+CTCF_minus: CTCF ChIP-seq peak that has only "-" direction motifs
+
+SMC: Cohesin (SMC3) ChIP-seq peak
+
 **GM12**
 
 <img src="https://Arthurhe.github.com/NSB5_domain_caller/images/GM12_domain_calling_SC_QC.png" width="900">
