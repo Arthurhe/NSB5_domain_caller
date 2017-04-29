@@ -173,6 +173,12 @@ Options:
 	--outformat=CHARACTER
 		output format, option available:pdf,png [default: pdf]
 
+	--outwidth=NUMERIC
+		width of output image in inches [default: 13]
+
+	--outheight=NUMERIC
+		height of output image in inches [default: 13]
+
 	-h, --help
 		Show this help message and exit
 ```
