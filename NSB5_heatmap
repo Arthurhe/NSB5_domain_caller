@@ -25,11 +25,15 @@ option_list = list(
   make_option(c("-s", "--sta"), type="numeric", default=1, 
               help="start of genomic position [default: 1]", metavar="numeric"),
   make_option(c("-e", "--sto"), type="numeric", default=1000000, 
-              help="end of genomic position [default: 1000000]"),
+              help="end of genomic position [default: 1000000]", metavar="numeric"),
   make_option(c("--contrast"), type="numeric", default=4, 
               help="contrast of the image [default:4]", metavar="numeric"),
   make_option(c("--outformat"), type="character", default="pdf", 
-              help="output format, option available:pdf,png [default: pdf]")
+              help="output format, option available:pdf,png [default: pdf]", metavar="character"),
+  make_option(c("--outwidth"), type="numeric", default=13, 
+              help="width of output image in inches [default: 13]", metavar="numeric"),
+  make_option(c("--outheight"), type="numeric", default=13, 
+              help="height of output image in inches [default: 13]", metavar="numeric")
 ); 
 
 opt_parser = OptionParser(option_list=option_list)
@@ -131,9 +135,9 @@ weight_matrix=matrixconverter(input_matrix,domain1,domain2)
 weight_matrix=weight_matrix[floor(opt$sta/(opt$res*shrinklevel)+1):ceiling(opt$sto/(opt$res*shrinklevel)),floor(opt$sta/(opt$res*shrinklevel)+1):ceiling(opt$sto/(opt$res*shrinklevel))]
 
 if(opt$outformat=="pdf"){
-  pdf(file=opt$outname,width=13,height=13)
+  pdf(file=opt$outname,width=opt$outwidth,height=opt$outheight)
 }else if(opt$outformat=="png"){
-  png(file=opt$outname,width=20,height=20)
+  png(file=opt$outname,width=opt$outwidth*72,height=opt$outheight*72)
 }else{
   stop("--outformat must be either pdf or png")
 }
@@ -143,4 +147,5 @@ heatmap.2(weight_matrix,col=colorRampPalette(c(rep("#313695",opt$contrast), "#45
           lhei=c(0.5,5),lwid=c(0.5,5),margins = c(2,2),symkey=F)
 dev.off()
 
-#NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.png -c chr10 -s 20000000 -e 90000000 --outformat=png
+#NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.pdf -c chr10 -s 20000000 -e 90000000
+#NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/Matrix_50000/gdTCR.mm10_chr1_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/domain_50000/gdTCR.mm10_refined_domains.bed -r 50000 -o chr1_visualization.pdf -c chr1 -s 20000000 -e 90000000

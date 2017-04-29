@@ -36,7 +36,7 @@ cat("# package check and loading finished\n")
 options("scipen"=100)
 
 #load functions
-source(paste0(script.dir,"/NSB_all_function.R"))
+source(paste0(script.dir,"/internal/NSB_all_function.R"))
 
 ###parse input arguments
 option_list = list(
@@ -194,14 +194,14 @@ cat(paste("----------- domain candidate identified, time consumption so far:",ti
 ###HiC summary generation
 if(opt$overwriteH | !file.exists(paste0(opt$tagDir,"/HiC_summary.txt"))){
   cat("# creating HiC summary\n")
-  system(paste0(script.dir,"/NSB_homer_HiC_summary_generation.sh ",opt$tagDir))
+  system(paste0(script.dir,"/internal/NSB_homer_HiC_summary_generation.sh ",opt$tagDir))
 }else{
   cat("# skip creating HiC summary\n")
 }
 cat(paste("----------- HiC summarizing finished, time consumption so far:",timetaken(ptm),"\n"))
 
 ##reads organizing
-cat("# domain boundary reads processing\n")
+cat("# domain boundary reads processing\n") #alwasy generate new boundary regions
 boundaryRegion=domain_refine_prefilteringRegionCreation(domains=NSB_elemental_domain,
                                                        obinSize=opt$resolution,
                                                        outname=paste0(opt$tagDir,"/prefilteringRegionList.bed"))
@@ -210,7 +210,7 @@ boundaryRegion_splited=region_expanding_fixedSize(widsize=opt$resolution/10,
                                                   loops_table=boundaryRegion,
                                                   outname=paste0(opt$tagDir,"/prefilteringRegionList_splited.bed"))
 cat("# boundary region created\n")
-system(paste0(script.dir,"/NSB5_tag_processing_simp.sh ",opt$tagDir," ",opt$genomeSize))
+system(paste0(script.dir,"/internal/NSB5_tag_processing_simp.sh ",opt$tagDir," ",opt$genomeSize))
 cat(paste("----------- reads processing finished, time consumption so far:",timetaken(ptm),"\n"))
 
 ###domain refining

@@ -73,10 +73,10 @@ if(length(posi)==0){
   system(paste0("echo ' ' >> ~/.bashrc")) 
   system(paste0("echo '#NSB5 program' >> ~/.bashrc")) 
   system(paste0("echo 'PATH=",script.dir,":$PATH' >> ~/.bashrc"))
-  system(paste0("echo 'PATH=/home/ahe/tools/bedtools2/bin:$PATH' >> ~/.bashrc"))
+  # system(paste0("echo 'PATH=/home/ahe/tools/bedtools2/bin:$PATH' >> ~/.bashrc")) #for murre lab
 }else{
   cat("# ~/.bashrc has been modified, skipping it\n")
 }
 
 #add the path to PATH now
-system(paste0("bash ",script.dir,"/NSB_installer_addtoPATH.sh")) 
+system(paste0("bash ",script.dir,"/internal/NSB_installer_addtoPATH.sh")) 
