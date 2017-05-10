@@ -2,7 +2,7 @@
   <img src ="https://Arthurhe.github.com/NSB5_domain_caller/images/NSB5logo.png" width="400" alt="NSB5 logo" />
 </p>
 
-# NSB5 domain caller V0.1.1
+# NSB5 domain caller V0.2
 
 A domain caller working on HOMER tag directory of HiC: NSB5_homer (the current version relies on HOMER to run matrix construction)
 
@@ -123,11 +123,19 @@ Options:
 ```
 
 ### How to use the plotting program: NSB5_heatmap
-Example usage:
+
+The program can be used to plot HiC interaction matrix, accepted input format are: full matrix and sparse matrix. Optionally, it can also plot at most 2 domain sets on the output figure.
+
+Example usage of full matrix:
 ```
-NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.pdf -c chr10 -s 40000000 -e 70000000
+NSB5_heatmap -m full.HiC.matrix.file -d 1st.domain.bed --domain2=2nd.domain.bed -r 50000 -c chr10 -s 40000000 -e 70000000 -o output.pdf [other options]
 ```
-Example image:
+Example usage of sparse matrix:
+```
+NSB5_heatmap -m sparse.HiC.matrix.file -f sparse --gsize=two.columns.genome.size.file -r 50000 -c chr10 -s 40000000 -e 70000000 -o output.pdf [other options]
+```
+
+Example image with domain plotted on it:
 
 <img src="https://Arthurhe.github.com/NSB5_domain_caller/images/homer_heatmap_example.png" width="500">
 
