@@ -7,7 +7,7 @@ option_list = list(
   make_option(c("-m", "--mat"), type="character", default=NULL, 
               help="matrix file, tab deliminated [required]", metavar="character"),
   make_option(c("-f","--matrixformat"), type="character", default="full", 
-              help="the format of input matrix, available option: full, iced, sparse [default:full]", metavar="character"),
+              help="the format of input matrix, available option: full or sparse [default:full]", metavar="character"),
   make_option(c("-r", "--res"), type="numeric", default=NULL, 
               help="resolution of matrix /bp [required]", metavar="numeric"),
   make_option(c("-c","--chr"), type="character", default=NULL, 
@@ -19,7 +19,7 @@ option_list = list(
   make_option(c("-o", "--outname"), type="character", default=NULL, 
               help="output pdf name [required]", metavar="character"),
   make_option(c("--gsize"), type="character", default=NULL, 
-              help="genome size file, required for \"iced\" input matrix", metavar="character"),
+              help="genome size file, required for \"sparse\" input matrix", metavar="character"),
   make_option(c("--igrow"), type="numeric", default=0, 
               help="when loading matrix, ignore first k row, e.g. 1 (for HOMER matrix) [default:0]", metavar="numeric"),
   make_option(c("--igcol"), type="numeric", default=0, 
@@ -40,13 +40,12 @@ option_list = list(
 
 opt_parser = OptionParser(description = "-------------------------------------------------
   Draw HiC matrix heatmap. 
-  Accepted input files: HiC interaction matrix in format of full, iced or sparse matrix. domain files (up to two) in bed format.
+  Accepted input files: HiC interaction matrix in format of full or sparse matrix. domain files (up to two) in bed format.
   Recommend for plotting single chromosome plot, does not garantee to work for whole genome plot (make take up too much memory if resolution is small)
 
   Matrix format explained:
   full: tab deliminated full matrix for single chromosome, can be whole genome if no domain need to be plotted.
-  iced: tab deliminated sparse matrix for whole genome, 1st & 2nd columns are integer showing x-y postion, 3rd columns are interaction intensity.
-  sparse: tab deliminated sparse matrix, first column is chromosome name, 2nd & 3rd are x-y position for each chromosome, 4th column is interaction intensity.
+  sparse: tab deliminated sparse matrix for whole genome, 1st & 2nd columns are integer showing x-y postion, 3rd columns are interaction intensity.
                           
   Known bug: when use -g, linux system will give the following warning: 
              WARNING: unknown gui '/home/ahe/Analysis/genomeFiles/GenomeSize_hg19_essential.txt', using X11
@@ -119,9 +118,9 @@ shrink_bed=function(bed,shrink_level){
   return(bed)
 }
 
-if(!opt$matrixformat %in% c("full","iced","sparse")){
+if(!opt$matrixformat %in% c("full","sparse")){
   cat("\n--------------------------------------------------------\n")
-  stop("matrixformat must be full, iced or sparse \nuse -h to see manual", call.=FALSE)
+  stop("matrixformat must be full or sparse \nuse -h to see manual", call.=FALSE)
 }
 
 if(opt$matrixformat=="full"){
@@ -139,11 +138,11 @@ if(opt$matrixformat=="full"){
   }
 }
 
-if(opt$matrixformat=="iced"){
-  cat("iced sparse matrix selected\n")
+if(opt$matrixformat=="sparse"){
+  cat("sparse matrix selected\n")
   if(is.null(opt$gsize) | is.null(opt$chr)){
     cat("\n--------------------------------------------------------\n")
-    stop("genome size file and chr name must be supplied if iced matrix is used \nuse -h to see manual", call.=FALSE)
+    stop("genome size file and chr name must be supplied if sparse matrix is used \nuse -h to see manual", call.=FALSE)
   }
   input_matrix=fread(opt$mat,sep="\t",stringsAsFactors=FALSE,data.table=T)
   colnames(input_matrix)=c("x","y","intensity")
@@ -218,5 +217,4 @@ dev.off()
 
 #NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.pdf -c chr10 -s 20000000 -e 90000000
 #NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/Matrix_50000/gdTCR.mm10_chr1_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/domain_50000/gdTCR.mm10_refined_domains.bed -r 50000 -o chr1_visualization.pdf -c chr1 -s 20000000 -e 90000000
-#NSB5_heatmap -m data_10000_iced.matrix -r 10000 -f iced --gsize=~/Analysis/genomeFiles/GenomeSize_hg19_essential.txt -c chr2 -s 20000000 -e 90000000 -o ~/trail_ice.pdf  
-    
+#NSB5_heatmap -m data_10000_iced.matrix -r 10000 -f sparse --gsize=~/Analysis/genomeFiles/GenomeSize_hg19_essential.txt -c chr2 -s 20000000 -e 90000000 -o ~/trail_ice.pdf  
