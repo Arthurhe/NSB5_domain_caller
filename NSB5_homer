@@ -24,21 +24,9 @@ if(length(new.packages)){
   stop("the program require the following 5 R libraries:\noptparse, data.table, matrixStats, GenomicRanges, fitdistrplus\nInstall them manually or by runing NSB5_installer")
 }
 
-#library loading
-cat("# package loading\n")
-suppressMessages(library(optparse))
-suppressMessages(library(data.table)) 
-suppressMessages(library(matrixStats))
-suppressMessages(library(GenomicRanges))
-suppressMessages(library(fitdistrplus))
-
-cat("# package check and loading finished\n")
-options("scipen"=100)
-
-#load functions
-source(paste0(script.dir,"/internal/NSB_all_function.R"))
-
 ###parse input arguments
+suppressMessages(library(optparse))
+
 option_list = list(
   make_option(c("-t", "--tagDir"), type="character", default=NULL,
               help="tag directory path (without the last slash: \"/\"). e.g. /home/ahe/Analysis/dn3.mm10 [required]", metavar="character"),
@@ -84,6 +72,19 @@ if(opt$overwrite){
   opt$overwriteD=T
   opt$overwriteH=T
 }
+
+#library loading
+cat("# package loading\n")
+suppressMessages(library(data.table)) 
+suppressMessages(library(matrixStats))
+suppressMessages(library(GenomicRanges))
+suppressMessages(library(fitdistrplus))
+
+cat("# package check and loading finished\n")
+options("scipen"=100)
+
+#load functions
+source(paste0(script.dir,"/internal/NSB_all_function.R"))
 
 #check tag dir 
 tagtsvs=list.files(path = opt$tagDir, pattern = "chr.*\\.tags\\.tsv")
