@@ -1,23 +1,25 @@
 #!/usr/bin/env Rscript
 #draw heatmap for HiC matrix and domains
-suppressMessages(library(data.table)) 
-suppressMessages(library(gplots))
 suppressMessages(library(optparse))
 
 ###parse input arguments
 option_list = list(
   make_option(c("-m", "--mat"), type="character", default=NULL, 
-              help="matrix file. [required]", metavar="character"),
-  make_option(c("-d", "--domain1"), type="character", default=NULL,
-              help="domain file in bed format [required]", metavar="character"),
-  make_option(c("--domain2"), type="character", default=NULL, 
-              help="additional domain file in bed format [optional]", metavar="character"),
+              help="matrix file, tab deliminated [required]", metavar="character"),
+  make_option(c("-f","--matrixformat"), type="character", default="full", 
+              help="the format of input matrix, available option: full, iced, sparse [default:full]", metavar="character"),
   make_option(c("-r", "--res"), type="numeric", default=NULL, 
-              help="resolution of matrix [required]", metavar="numeric"),
+              help="resolution of matrix /bp [required]", metavar="numeric"),
   make_option(c("-c","--chr"), type="character", default=NULL, 
-              help="chromosome name [required]", metavar="character"),
+              help="chromosome name, used to select chr for sparse matrix and domain bed", metavar="character"),
+  make_option(c("-d", "--domain1"), type="character", default=NULL,
+              help="domain file [optional, plot on upper right corner]", metavar="character"),
+  make_option(c("--domain2"), type="character", default=NULL, 
+              help="additional domain file [optional, plot on lower left corner]", metavar="character"),
   make_option(c("-o", "--outname"), type="character", default=NULL, 
               help="output pdf name [required]", metavar="character"),
+  make_option(c("--gsize"), type="character", default=NULL, 
+              help="genome size file, required for \"iced\" input matrix", metavar="character"),
   make_option(c("--igrow"), type="numeric", default=0, 
               help="when loading matrix, ignore first k row, e.g. 1 (for HOMER matrix) [default:0]", metavar="numeric"),
   make_option(c("--igcol"), type="numeric", default=0, 
@@ -26,8 +28,8 @@ option_list = list(
               help="start of genomic position [default: 1]", metavar="numeric"),
   make_option(c("-e", "--sto"), type="numeric", default=1000000, 
               help="end of genomic position [default: 1000000]", metavar="numeric"),
-  make_option(c("--contrast"), type="numeric", default=4, 
-              help="contrast of the image [default:4]", metavar="numeric"),
+  make_option(c("--contrast"), type="numeric", default=6, 
+              help="contrast of the image [default:6]", metavar="numeric"),
   make_option(c("--outformat"), type="character", default="pdf", 
               help="output format, option available:pdf,png [default: pdf]", metavar="character"),
   make_option(c("--outwidth"), type="numeric", default=13, 
@@ -36,22 +38,45 @@ option_list = list(
               help="height of output image in inches [default: 13]", metavar="numeric")
 ); 
 
-opt_parser = OptionParser(option_list=option_list)
+opt_parser = OptionParser(description = "-------------------------------------------------
+  Draw HiC matrix heatmap. 
+  Accepted input files: HiC interaction matrix in format of full, iced or sparse matrix. domain files (up to two) in bed format.
+  Recommend for plotting single chromosome plot, does not garantee to work for whole genome plot (make take up too much memory if resolution is small)
+
+  Matrix format explained:
+  full: tab deliminated full matrix for single chromosome, can be whole genome if no domain need to be plotted.
+  iced: tab deliminated sparse matrix for whole genome, 1st & 2nd columns are integer showing x-y postion, 3rd columns are interaction intensity.
+  sparse: tab deliminated sparse matrix, first column is chromosome name, 2nd & 3rd are x-y position for each chromosome, 4th column is interaction intensity.
+                          
+  Known bug: when use -g, linux system will give the following warning: 
+             WARNING: unknown gui '/home/ahe/Analysis/genomeFiles/GenomeSize_hg19_essential.txt', using X11
+             which is normal",option_list=option_list)
 opt = parse_args(opt_parser)
+
+suppressMessages(library(gplots))
+suppressMessages(library(data.table)) 
+suppressMessages(library(Matrix))
+suppressMessages(library(methods))
 
 ###set up variable
 cat("# variable setup\n")
-if (is.null(opt$mat)|is.null(opt$domain1)|is.null(opt$res)|is.null(opt$outname)|is.null(opt$chr)){
+if (is.null(opt$mat)|is.null(opt$res)|is.null(opt$outname)){
   cat("\n--------------------------------------------------------\n")
   stop("some required arguments are missing\nuse -h to see manual", call.=FALSE)
 }
+if ((!is.null(opt$domain1) | !is.null(opt$domain1)) & is.null(opt$chr)){
+  cat("\n--------------------------------------------------------\n")
+  stop("chr must be supplied if domain1 and/or domain2 are supplied \nuse -h to see manual", call.=FALSE)
+}
 
-matrixconverter=function(weight_matrix,domain1,domain2=NULL,strength=1){
+matrixconverter=function(weight_matrix,domain1=NULL,domain2=NULL,strength=1){
   weight_matrix=log10(weight_matrix+1)
   themin=strength*(min(weight_matrix)-max(weight_matrix))
-  for(i in 1:nrow(domain1)){
-    weight_matrix[domain1[i,2],domain1[i,2]:domain1[i,3]]=themin
-    weight_matrix[domain1[i,2]:domain1[i,3],domain1[i,3]]=themin
+  if(!is.null(domain2)){
+    for(i in 1:nrow(domain1)){
+      weight_matrix[domain1[i,2],domain1[i,2]:domain1[i,3]]=themin
+      weight_matrix[domain1[i,2]:domain1[i,3],domain1[i,3]]=themin
+    }
   }
   if(!is.null(domain2)){
     for(i in 1:nrow(domain2)){
@@ -94,24 +119,60 @@ shrink_bed=function(bed,shrink_level){
   return(bed)
 }
 
-if (opt$igrow) {opt$igrow=seq(1,opt$igrow)}
-if (opt$igcol) {
-  opt$igcol=seq(1,opt$igcol)
-  input_matrix=as.matrix(fread(opt$mat,sep="\t",stringsAsFactors=FALSE,skip=opt$igrow,drop=opt$igcol,data.table=F))
-}else{
-  input_matrix=as.matrix(fread(opt$mat,sep="\t",stringsAsFactors=FALSE,skip=opt$igrow,data.table=F))
+if(!opt$matrixformat %in% c("full","iced","sparse")){
+  cat("\n--------------------------------------------------------\n")
+  stop("matrixformat must be full, iced or sparse \nuse -h to see manual", call.=FALSE)
 }
 
-if(nrow(input_matrix)!=ncol(input_matrix)){stop("row number of matrix must identical to col number")}
+if(opt$matrixformat=="full"){
+  cat("full matrix selected\n")
+  if (opt$igrow) {opt$igrow=seq(1,opt$igrow)}
+  if (opt$igcol) {
+    opt$igcol=seq(1,opt$igcol)
+    input_matrix=as.matrix(fread(opt$mat,sep="\t",stringsAsFactors=FALSE,skip=opt$igrow,drop=opt$igcol,data.table=F))
+  }else{
+    input_matrix=as.matrix(fread(opt$mat,sep="\t",stringsAsFactors=FALSE,skip=opt$igrow,data.table=F))
+  }
+  if(nrow(input_matrix)!=ncol(input_matrix)){
+    cat("\n--------------------------------------------------------\n")
+    stop("row number of matrix must identical to col number for full matrix")
+  }
+}
 
+if(opt$matrixformat=="iced"){
+  cat("iced sparse matrix selected\n")
+  if(is.null(opt$gsize) | is.null(opt$chr)){
+    cat("\n--------------------------------------------------------\n")
+    stop("genome size file and chr name must be supplied if iced matrix is used \nuse -h to see manual", call.=FALSE)
+  }
+  input_matrix=fread(opt$mat,sep="\t",stringsAsFactors=FALSE,data.table=T)
+  colnames(input_matrix)=c("x","y","intensity")
+  gsize=fread(opt$gsize,sep="\t",stringsAsFactors=F,data.table=F)
+  gsize=cbind(gsize,ceiling(gsize[,2]/opt$res))
+  chrpos=which(gsize[,1]==opt$chr)
+  if(chrpos>1){
+    chrstart=sum(gsize[1:(chrpos-1),3])+1
+    chrend=sum(gsize[1:chrpos,3])
+  }
+  input_matrix=input_matrix[x>chrstart & x<chrend,]
+  input_matrix=input_matrix[y>chrstart & y<chrend,]
+  input_matrix=data.frame(input_matrix)
+  input_matrix[,1:2]=input_matrix[,1:2]-chrstart+1
+  input_matrix=sparseMatrix(i = input_matrix[,1], j = input_matrix[,2], x=input_matrix[,3])
+  input_matrix=as.matrix(input_matrix)
+}
+
+maintitle=opt$chr
 #domain1
-domain1=fread(opt$domain1,sep="\t",stringsAsFactors=FALSE,data.table=F,select = 1:3)
-name1=basename(opt$domain1)
-domain1=domain1[which(domain1[,1]==opt$chr),]
-domain1[,2]=floor(domain1[,2]/opt$res+1)
-domain1[,3]=pmin(ceiling(domain1[,3]/opt$res),nrow(input_matrix))
-domain1=domain1[which(!is.na(domain1[,2])&!is.na(domain1[,3])),]
-maintitle=paste(opt$chr,"\nupper triangular:",name1)
+if(!is.null(opt$domain1)){
+  domain1=fread(opt$domain1,sep="\t",stringsAsFactors=FALSE,data.table=F,select = 1:3)
+  name1=basename(opt$domain1)
+  domain1=domain1[which(domain1[,1]==opt$chr),]
+  domain1[,2]=floor(domain1[,2]/opt$res+1)
+  domain1[,3]=pmin(ceiling(domain1[,3]/opt$res),nrow(input_matrix))
+  domain1=domain1[which(!is.na(domain1[,2])&!is.na(domain1[,3])),]
+  maintitle=paste(maintitle,"\nupper triangular:",name1)
+}else{domain1=NULL}
 #domain2
 if(!is.null(opt$domain2)){
   domain2=fread(opt$domain2,sep="\t",stringsAsFactors=FALSE,data.table=F,select = 1:3) #fread will auto detect colnames
@@ -120,12 +181,13 @@ if(!is.null(opt$domain2)){
   domain2[,2]=floor(domain2[,2]/opt$res+1)
   domain2[,3]=min(ceiling(domain2[,3]/opt$res),nrow(input_matrix))
   domain2=domain2[which(!is.na(domain2[,2])&!is.na(domain2[,3])),]
-  maintitle=paste(opt$chr,"\nupper triangular:",name1,"\nlower triangular:",name2)
+  maintitle=paste(maintitle,"\nupper triangular:",name2)
 }else{domain2=NULL}
 
 #determine shrink level
 
 shrinklevel=ceiling((opt$sto-opt$sta)/1500/opt$res)#1500*1500is the largest matrix allowed to display
+cat(paste("shrinklevel:",shrinklevel,"\n"))
 if(shrinklevel>1){
   domain1=shrink_bed(domain1,shrinklevel)
   domain2=shrink_bed(domain2,shrinklevel)
@@ -141,7 +203,14 @@ if(opt$outformat=="pdf"){
 }else{
   stop("--outformat must be either pdf or png")
 }
-heatmap.2(weight_matrix,col=colorRampPalette(c(rep("#313695",opt$contrast), "#4575B4", "#74ADD1", "#ABD9E9", "#E0F3F8", "#FFFFBF","#FEE090", "#FDAE61", "#F46D43", "#D73027", rep("#A50026",opt$contrast))),
+
+#set color
+if(is.null(domain1) & is.null(domain2)){
+  cols=colorRampPalette(c("#FFFFBF","#FEE090", "#FDAE61", "#F46D43", "#D73027", rep("#A50026",opt$contrast)))
+}else{
+  cols=colorRampPalette(c(rep("#313695",opt$contrast), "#4575B4", "#74ADD1", "#ABD9E9", "#E0F3F8", "#FFFFBF","#FEE090", "#FDAE61", "#F46D43", "#D73027", rep("#A50026",opt$contrast)))
+}
+heatmap.2(weight_matrix,col=cols,
           trace="none",density.info="none",key=F,Colv=F,Rowv=F,notecol="black",dendrogram = "none",
           main=maintitle,
           lhei=c(0.5,5),lwid=c(0.5,5),margins = c(2,2),symkey=F)
@@ -149,3 +218,4 @@ dev.off()
 
 #NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.pdf -c chr10 -s 20000000 -e 90000000
 #NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/Matrix_50000/gdTCR.mm10_chr1_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/domain_50000/gdTCR.mm10_refined_domains.bed -r 50000 -o chr1_visualization.pdf -c chr1 -s 20000000 -e 90000000
+#NSB5_heatmap -m data_10000_iced.matrix -r 10000 -f iced --gsize=~/Analysis/genomeFiles/GenomeSize_hg19_essential.txt -c chr2 -s 20000000 -e 90000000 -o ~/trail_ice.pdf  
