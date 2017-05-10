@@ -111,6 +111,12 @@ shrink_matrix=function(weight_matrix,shrink_level){
   return(new_matrix) 
 }
 
+cover_both_tri=function(x){
+  if(sum(lower.tri(x)*x,na.rm = T)==0 | sum(upper.tri(x)*x,na.rm = T)==0){
+    x=x+t(x)
+  }
+}
+
 shrink_bed=function(bed,shrink_level){
   if(is.null(bed)){return(NULL)}
   bed[,2]=floor(bed[,2]/shrink_level+1)
@@ -203,6 +209,9 @@ if(opt$outformat=="pdf"){
   stop("--outformat must be either pdf or png")
 }
 
+#make sure the matrix has value on both side
+weight_matrix=cover_both_tri(weight_matrix)
+
 #set color
 if(is.null(domain1) & is.null(domain2)){
   cols=colorRampPalette(c("#FFFFBF","#FEE090", "#FDAE61", "#F46D43", "#D73027", rep("#A50026",opt$contrast)))
@@ -217,4 +226,4 @@ dev.off()
 
 #NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/Matrix_50000/dn3.mm10_chr10_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/dn3.mm10/domain_50000/dn3.mm10_refined_domains.bed -r 50000 -o chr10_visualization.pdf -c chr10 -s 20000000 -e 90000000
 #NSB5_heatmap -m /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/Matrix_50000/gdTCR.mm10_chr1_matrix_KR_50000.txt -d /home/ahe/Analysis/201704_DN2DN3/data/HiC/gdTCR.mm10/domain_50000/gdTCR.mm10_refined_domains.bed -r 50000 -o chr1_visualization.pdf -c chr1 -s 20000000 -e 90000000
-#NSB5_heatmap -m data_10000_iced.matrix -r 10000 -f sparse --gsize=~/Analysis/genomeFiles/GenomeSize_hg19_essential.txt -c chr2 -s 20000000 -e 90000000 -o ~/trail_ice.pdf  
+#NSB5_heatmap -m data_10000_iced.matrix -r 10000 -f sparse --gsize=/home/ahe/Analysis/genomeFiles/GenomeSize_hg19_essential.txt -c chr2 -s 20000000 -e 90000000 -o ~/trail_ice.pdf  

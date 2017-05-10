@@ -16,7 +16,7 @@ script.dir <- dirname(thisFile()) #setup current location
 
 #library check
 cat("# package check\n")
-list.of.packages <- c("optparse","data.table", "matrixStats", "GenomicRanges", "fitdistrplus","gplots")
+list.of.packages <- c("optparse","data.table", "matrixStats", "GenomicRanges", "fitdistrplus","gplots","Matrix")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)){
   cat("# package installing\n")
