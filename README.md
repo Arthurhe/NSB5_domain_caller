@@ -65,8 +65,8 @@ The program only works in linux bash.
 
 3.bedtools v2.25.0
 
-4.six R packages: 
- "optparse", "data.table", "matrixStats", "GenomicRanges", "fitdistrplus", "gplots"
+4.7 R packages: 
+ "optparse", "data.table", "matrixStats", "GenomicRanges", "fitdistrplus", "gplots", "Matrix"
 
 ### Installing
 
